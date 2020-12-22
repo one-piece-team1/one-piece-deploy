@@ -56,6 +56,7 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6379:6379"
+
   # main server redis
   redismain:
     build: redis:alpine
@@ -66,6 +67,7 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6380:6379"
+
   # geo server redis
   redisgeo:
     build: redis:alpine
@@ -76,6 +78,17 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6381:6379"
+  
+  # geo server redis
+  redisuser:
+    build: redis:alpine
+    container_name: onepiece-user-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6382:6379"
   
   # RDBMS Area
   # main server db
@@ -91,6 +104,7 @@ services:
       - 5432:5432
     volumes:
       - main_data:/var/lib/postgresql/data
+  
   # geo db
   dbgeo:
     image: postgres:latest
@@ -104,11 +118,25 @@ services:
       - 5433:5432
     volumes:
       - geo_data:/var/lib/postgresql/data
+
+  # main server db
+  dbuser:
+    image: postgres:latest
+    container_name: onepiece-user-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5434:5432
+    volumes:
+      - user_data:/var/lib/postgresql/data
   
   # Server Area
   # gateway
   gateway:
-    build: ../service-gateway
+    build: ../one-piece-gateway
     container_name: onepiece-gateway
     command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://ratelimit:6379 npm run start:prod"
     depends_on:
@@ -116,8 +144,12 @@ services:
     environment:
       APPHOST: localhost
       APPPORT: 8080
+      USERSERVER: ${USERSERVER}
+      USERSERVERHOST: ${USERSERVERHOST}
+      USERSERVERPORT: ${USERSERVERPORT}
     ports:
       - 8080:8080
+  
   # main server
   service-main:
     build: ../service-main
@@ -138,6 +170,7 @@ services:
       DBRATETABLE: main
     ports:
       - 7070:7070
+  
   # geo server
   service-geo:
     build: ../service-geo
@@ -157,10 +190,33 @@ services:
       DBSCHEMA: public
       DBRATETABLE: geo
     ports:
+      - 7072:7072
+
+  # user server
+  service-user:
+    build: ../one-piece-user
+    container_name: onepiece-user-server
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://redisuser:6382 -wait tcp://dbuser:5434 npm run start:prod"
+    depends_on:
+      - redisuser
+      - dbuser
+    environment:
+      APPHOST: localhost
+      APPPORT: 7071
+      DBHOST: database
+      DBPORT: 5434
+      DBUSERNAME: postgres
+      DBPASSWORD: 123
+      DBDATABASE: lib
+      DBSCHEMA: public
+      DBRATETABLE: user
+    ports:
       - 7071:7071
 
 volumes:
   main_data:
     driver: local
   geo_data:
+    driver: local
+  user_data:
     driver: local

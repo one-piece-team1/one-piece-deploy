@@ -1,54 +1,10 @@
 version: "3"
 
 services:
-  # MQ area
-  # rabbit
-  rabbitmq:
-    image: "rabbitmq:3-management"
-    hostname: "rabbitmq"
-    environment:
-      RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
-      RABBITMQ_DEFAULT_USER: "rabbitmq"
-      RABBITMQ_DEFAULT_PASS: "rabbitmq"
-      RABBITMQ_DEFAULT_VHOST: "/"
-    ports:
-      - "15672:15672"
-      - "5672:5672"
-  # zookeeper
-  zookeeper:
-    image: confluentinc/cp-zookeeper
-    container_name: onepiece-zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_SYNC_LIMIT: 2
-  # kafka
-  kafka:
-    image: confluentinc/cp-kafka
-    container_name: onepiece-kafka
-    ports:
-      - 9094:9094
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://kafka:9094
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CREATE_TOPICS: onepiece-topic
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-  
   # redis area
   # rate limit redis for gateway
   ratelimit:
-    build: redis:alpine
+    image: redis:alpine
     container_name: onepiece-gateway-redis
     environment:
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -56,32 +12,10 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6379:6379"
-
-  # main server redis
-  redismain:
-    build: redis:alpine
-    container_name: onepiece-main-redis
-    environment:
-      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-    labels:
-      kompose.service.type: nodeport
-    ports:
-      - "6380:6379"
-
-  # geo server redis
-  redisgeo:
-    build: redis:alpine
-    container_name: onepiece-geo-redis
-    environment:
-      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-    labels:
-      kompose.service.type: nodeport
-    ports:
-      - "6381:6379"
   
-  # geo server redis
+  # user server redis
   redisuser:
-    build: redis:alpine
+    image: redis:alpine
     container_name: onepiece-user-redis
     environment:
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -89,35 +23,6 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6382:6379"
-  
-  # RDBMS Area
-  # main server db
-  dbmain:
-    image: postgres:latest
-    container_name: onepiece-main-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: onepiece
-    ports:
-      - 5432:5432
-    volumes:
-      - main_data:/var/lib/postgresql/data
-  
-  # geo db
-  dbgeo:
-    image: postgres:latest
-    container_name: onepiece-geo-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: onepiece
-    ports:
-      - 5433:5432
-    volumes:
-      - geo_data:/var/lib/postgresql/data
 
   # main server db
   dbuser:
@@ -129,94 +34,10 @@ services:
       POSTGRES_PASSWORD: 123
       POSTGRES_DB: onepiece
     ports:
-      - 5434:5432
+      - 5432:5432
     volumes:
       - user_data:/var/lib/postgresql/data
-  
-  # Server Area
-  # gateway
-  gateway:
-    build: ../one-piece-gateway
-    container_name: onepiece-gateway
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://ratelimit:6379 npm run start:prod"
-    depends_on:
-      - ratelimit
-    environment:
-      APPHOST: localhost
-      APPPORT: 8080
-      USERSERVER: ${USERSERVER}
-      USERSERVERHOST: ${USERSERVERHOST}
-      USERSERVERPORT: ${USERSERVERPORT}
-    ports:
-      - 8080:8080
-  
-  # main server
-  service-main:
-    build: ../service-main
-    container_name: onepiece-main-server
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://redismain:6380 -wait tcp://dbmain:5432 npm run start:prod"
-    depends_on:
-      - redismain
-      - dbmain
-    environment:
-      APPHOST: localhost
-      APPPORT: 7070
-      DBHOST: database
-      DBPORT: 5432
-      DBUSERNAME: postgres
-      DBPASSWORD: 123
-      DBDATABASE: lib
-      DBSCHEMA: public
-      DBRATETABLE: main
-    ports:
-      - 7070:7070
-  
-  # geo server
-  service-geo:
-    build: ../service-geo
-    container_name: onepiece-geo-server
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://redisgeo:6381 -wait tcp://dbgeo:5433 npm run start:prod"
-    depends_on:
-      - redisgeo
-      - dbgeo
-    environment:
-      APPHOST: localhost
-      APPPORT: 7071
-      DBHOST: dbgeo
-      DBPORT: 5433
-      DBUSERNAME: postgres
-      DBPASSWORD: 123
-      DBDATABASE: lib
-      DBSCHEMA: public
-      DBRATETABLE: geo
-    ports:
-      - 7072:7072
-
-  # user server
-  service-user:
-    build: ../one-piece-user
-    container_name: onepiece-user-server
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://redisuser:6382 -wait tcp://dbuser:5434 npm run start:prod"
-    depends_on:
-      - redisuser
-      - dbuser
-    environment:
-      APPHOST: localhost
-      APPPORT: 7071
-      DBHOST: database
-      DBPORT: 5434
-      DBUSERNAME: postgres
-      DBPASSWORD: 123
-      DBDATABASE: lib
-      DBSCHEMA: public
-      DBRATETABLE: user
-    ports:
-      - 7071:7071
 
 volumes:
-  main_data:
-    driver: local
-  geo_data:
-    driver: local
   user_data:
     driver: local

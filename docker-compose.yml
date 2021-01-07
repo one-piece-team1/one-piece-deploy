@@ -99,9 +99,9 @@ services:
     volumes:
       - user_data:/var/lib/postgresql/data
 
-  # user server db
+  # location server db
   dblocation:
-    image: postgres:latest
+    image: kartoza/postgis:13.0
     container_name: onepiece-location-db
     restart: always
     environment:

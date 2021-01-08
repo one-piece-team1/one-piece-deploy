@@ -60,7 +60,7 @@ services:
   # article_data server db
   dbarticle:
     image: postgres:latest
-    container_name: onepiece-user-article
+    container_name: onepiece-article-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -74,7 +74,7 @@ services:
   # trip server db
   dbtrip:
     image: postgres:latest
-    container_name: onepiece-user-trip
+    container_name: onepiece-trip-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -113,9 +113,25 @@ services:
     volumes:
       - location_data:/var/lib/postgresql/data
 
+  # pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    links:
+      - dblocation
+    depends_on:
+      - dblocation
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: 123
+    volumes:
+      - pgadmin:/root/.pgadmin
+    ports:
+      - "16543:80"
+
 volumes:
   article_data:
   user_data:
   trip_data:
   location_data:
+  pgadmin:
     driver: local

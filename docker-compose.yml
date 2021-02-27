@@ -57,20 +57,6 @@ services:
     ports:
       - "6383:6379"
 
-  # article_data server db
-  dbarticle:
-    image: postgres:latest
-    container_name: onepiece-article-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123
-      POSTGRES_DB: onepiece
-    ports:
-      - 5432:5432
-    volumes:
-      - article_data:/var/lib/postgresql/data
-
   # trip server db
   dbtrip:
     image: postgres:latest
@@ -113,6 +99,20 @@ services:
     volumes:
       - location_data:/var/lib/postgresql/data
 
+  # article_data server db
+  dbarticle:
+    image: postgres:latest
+    container_name: onepiece-article-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5436:5432
+    volumes:
+      - article_data:/var/lib/postgresql/data
+
   # pgAdmin
   pgadmin:
     image: dpage/pgadmin4
@@ -123,6 +123,7 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: 123
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
     volumes:
       - pgadmin:/root/.pgadmin
     ports:

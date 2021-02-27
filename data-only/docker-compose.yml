@@ -1,0 +1,138 @@
+version: "3"
+
+services:
+  # redis area
+  # rate limit redis for gateway
+  ratelimit:
+    image: redis:alpine
+    container_name: onepiece-gateway-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6379:6379"
+
+  # article server redis
+  redisarticle:
+    image: redis:alpine
+    container_name: onepiece-article-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6380:6379"
+
+  # trip server redis
+  redistrip:
+    image: redis:alpine
+    container_name: onepiece-trip-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6381:6379"
+  
+  # user server redis
+  redisuser:
+    image: redis:alpine
+    container_name: onepiece-user-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6382:6379"
+
+  # location server redis
+  redislocation:
+    image: redis:alpine
+    container_name: onepiece-location-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6383:6379"
+
+  # trip server db
+  dbtrip:
+    image: postgres:latest
+    container_name: onepiece-trip-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5433:5432
+    volumes:
+      - trip_data:/var/lib/postgresql/data
+
+  # user server db
+  dbuser:
+    image: postgres:latest
+    container_name: onepiece-user-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5434:5432
+    volumes:
+      - user_data:/var/lib/postgresql/data
+
+  # location server db
+  dblocation:
+    image: kartoza/postgis:13.0
+    container_name: onepiece-location-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5435:5432
+    volumes:
+      - location_data:/var/lib/postgresql/data
+
+  # article_data server db
+  dbarticle:
+    image: postgres:latest
+    container_name: onepiece-article-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5436:5432
+    volumes:
+      - article_data:/var/lib/postgresql/data
+
+  # pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    links:
+      - dblocation
+    depends_on:
+      - dblocation
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: 123
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
+    volumes:
+      - pgadmin:/root/.pgadmin
+    ports:
+      - "16543:80"
+
+volumes:
+  article_data:
+  user_data:
+  trip_data:
+  location_data:
+  pgadmin:
+    driver: local

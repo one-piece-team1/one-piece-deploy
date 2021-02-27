@@ -1,0 +1,314 @@
+version: "3"
+
+services:
+  # redis area
+  # rate limit redis for gateway
+  ratelimit:
+    image: redis:alpine
+    container_name: onepiece-gateway-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6379:6379"
+
+  # article server redis
+  redisarticle:
+    image: redis:alpine
+    container_name: onepiece-article-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6380:6379"
+
+  # trip server redis
+  redistrip:
+    image: redis:alpine
+    container_name: onepiece-trip-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6381:6379"
+  
+  # user server redis
+  redisuser:
+    image: redis:alpine
+    container_name: onepiece-user-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6382:6379"
+
+  # location server redis
+  redislocation:
+    image: redis:alpine
+    container_name: onepiece-location-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6383:6379"
+
+  # Relation DB Area
+  # trip server db
+  dbtrip:
+    image: postgres:latest
+    container_name: onepiece-trip-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5433:5432
+    volumes:
+      - trip_data:/var/lib/postgresql/data
+
+  # user server db
+  dbuser:
+    image: postgres:latest
+    container_name: onepiece-user-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5434:5432
+    volumes:
+      - user_data:/var/lib/postgresql/data
+
+  # location server db
+  dblocation:
+    image: kartoza/postgis:13.0
+    container_name: onepiece-location-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5435:5432
+    volumes:
+      - location_data:/var/lib/postgresql/data
+
+  # article_data server db
+  dbarticle:
+    image: postgres:latest
+    container_name: onepiece-article-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5436:5432
+    volumes:
+      - article_data:/var/lib/postgresql/data
+
+  # pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    links:
+      - dblocation
+    depends_on:
+      - dblocation
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: 123
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
+    volumes:
+      - pgadmin:/root/.pgadmin
+    ports:
+      - "16543:80"
+
+  # RMQ Communication Area
+  # rabbitmq area for serveral services communication will migrate all to use kafka later on if we have budget
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    hostname: "rabbitmq"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
+      RABBITMQ_DEFAULT_USER: "rabbitmq"
+      RABBITMQ_DEFAULT_PASS: "rabbitmq"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+  # KAFKA Communication Area
+  # kafka area for serveral services communication will migrate all to confluent if we have budget
+  # zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper
+    container_name: onepiece-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+  # kafka
+  kafka:
+    image: confluentinc/cp-kafka
+    container_name: onepiece-kafka
+    ports:
+      - 9094:9094
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://kafka:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CREATE_TOPICS: onepiece-topic-chat
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  
+
+  # Service Area
+  # gateway server
+  gateway:
+    build: ../one-piece-gateway
+    container_name: onepiece-gateway
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://ratelimit:6379 npm run start:prod"
+    depends_on:
+      - ratelimit
+    environment:
+      APPHOST: localhost
+      APPPORT: 8080
+      USERSERVER: ${USERSERVER}
+      USERSERVERHOST: ${USERSERVERHOST}
+      USERSERVERPORT: ${USERSERVERPORT}
+      TRIPSERVER: ${TRIPSERVER}
+      TRIPSERVERHOST: ${TRIPSERVERHOST}
+      TRIPSERVERPORT: ${TRIPSERVERPORT}
+      ARTICLEERVER: ${ARTICLEERVER}
+      ARTICLEERVERHOST: ${ARTICLEERVERHOST}
+      ARTICLEERVERPORT: ${ARTICLEERVERPORT}
+      LOCATIONERVER: ${LOCATIONERVER}
+      LOCATIONERVERHOST: ${LOCATIONERVERHOST}
+      LOCATIONERVERPORT: ${LOCATIONERVERPORT}
+      REDISRATELIMITURL: tcp://ratelimit:6379
+    ports:
+      - 8080:8080
+
+  # trip server
+  service-trip:
+    build: ../one-piece-trip
+    container_name: onepiece-trip-server
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6381 -wait tcp://dbtrip:5433 npm run start:prod"
+    depends_on:
+      - redistrip
+      - dbtrip
+    environment:
+      APPHOST: localhost
+      APPPORT: 7074
+      DBHOST: dbtrip
+      DBPORT: 5433
+      DBUSERNAME: postgres
+      DBPASSWORD: 123
+      DBDATABASE: onepiece
+      DBSCHEMA: public
+      DBRATETABLE: trip
+      REDIS_URL: tcp://redistrip:6381
+      JWTKEY: ${JWTKEY}
+      JWTSECRET: ${JWTSECRET}
+      CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
+      CLOUDINARY_APIKEY: ${CLOUDINARY_APIKEY}
+      CLOUDINARY_APISECRET: ${CLOUDINARY_APISECRET}
+      CLOUDINARY_APIURL: ${CLOUDINARY_APIURL}
+      EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}
+      EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
+      EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
+      LOCATIONERVER: ${LOCATIONERVER}
+      LOCATIONERVERHOST: ${LOCATIONERVERHOST}
+      LOCATIONERVERPORT: ${LOCATIONERVERPORT}
+    ports:
+      - 7070:7070
+
+  # user server
+  service-user:
+    build: ../one-piece-user
+    container_name: onepiece-user-server
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6382 -wait tcp://dbuser:5434 npm run start:prod"
+    depends_on:
+      - redisuser
+      - dbuser
+    environment:
+      APPHOST: localhost
+      APPPORT: 7071
+      DBHOST: dbuser
+      DBPORT: 5434
+      DBUSERNAME: postgres
+      DBPASSWORD: 123
+      DBDATABASE: onepiece
+      DBSCHEMA: public
+      DBRATETABLE: user
+      REDIS_URL: tcp://redisuser:6382
+      JWTKEY: ${JWTKEY}
+      JWTSECRET: ${JWTSECRET}
+      CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
+      CLOUDINARY_APIKEY: ${CLOUDINARY_APIKEY}
+      CLOUDINARY_APISECRET: ${CLOUDINARY_APISECRET}
+      CLOUDINARY_APIURL: ${CLOUDINARY_APIURL}
+      EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}
+      EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
+      EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
+      GOOGLEAUTHID: ${GOOGLEAUTHID}
+      GOOGLEAUTHSECRET: ${GOOGLEAUTHSECRET}
+      GOOGLEAUTHCALLBACKURL: ${GOOGLEAUTHCALLBACKURL}
+      GOOGLEMAILSUER: ${GOOGLEMAILSUER}
+      GOOGLEMAILPASS: ${GOOGLEMAILPASS}
+      FBAUTHID: ${FBAUTHID}
+      FBAUTHSECRET: ${FBAUTHSECRET}
+      FBAUTHCALLBACKURL: ${FBAUTHCALLBACKURL}
+    ports:
+      - 7071:7071
+
+  # location service
+  service-location:
+    build: ../one-piece-location
+    container_name: onepiece-location-server
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6383 -wait tcp://dblocation:5436 npm run start:prod"
+    depends_on:
+      - redislocation
+      - dblocation
+    environment:
+      APPHOST: localhost
+      APPPORT: 7074
+      DBHOST: dblocation
+      DBPORT: 5436
+      DBUSERNAME: postgres
+      DBPASSWORD: 123
+      DBDATABASE: onepiece
+      DBSCHEMA: public
+      DBRATETABLE: location
+      REDIS_URL: tcp://redislocation:6383
+      JWTKEY: ${JWTKEY}
+      JWTSECRET: ${JWTSECRET}
+      EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}
+      EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
+      EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
+    ports:
+      - 7072:7072
+
+volumes:
+  article_data:
+  user_data:
+  trip_data:
+  location_data:
+  pgadmin:
+    driver: local

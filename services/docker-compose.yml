@@ -209,7 +209,7 @@ services:
   service-trip:
     build: ../one-piece-trip
     container_name: onepiece-trip-server
-    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6381 -wait tcp://dbtrip:5433 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://dbtrip:5432 npm run start:prod"
     depends_on:
       - redistrip
       - dbtrip
@@ -217,13 +217,13 @@ services:
       APPHOST: localhost
       APPPORT: 7074
       DBHOST: dbtrip
-      DBPORT: 5433
+      DBPORT: 5432
       DBUSERNAME: postgres
       DBPASSWORD: 123
       DBDATABASE: onepiece
       DBSCHEMA: public
       DBRATETABLE: trip
-      REDIS_URL: tcp://redistrip:6381
+      REDIS_URL: tcp://redistrip:6379
       JWTKEY: ${JWTKEY}
       JWTSECRET: ${JWTSECRET}
       CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
@@ -243,7 +243,7 @@ services:
   service-user:
     build: ../one-piece-user
     container_name: onepiece-user-server
-    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6382 -wait tcp://dbuser:5434 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6379 -wait tcp://dbuser:5432 npm run start:prod"
     depends_on:
       - redisuser
       - dbuser
@@ -251,13 +251,13 @@ services:
       APPHOST: localhost
       APPPORT: 7071
       DBHOST: dbuser
-      DBPORT: 5434
+      DBPORT: 5432
       DBUSERNAME: postgres
       DBPASSWORD: 123
       DBDATABASE: onepiece
       DBSCHEMA: public
       DBRATETABLE: user
-      REDIS_URL: tcp://redisuser:6382
+      REDIS_URL: tcp://redisuser:6379
       JWTKEY: ${JWTKEY}
       JWTSECRET: ${JWTSECRET}
       CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
@@ -282,7 +282,7 @@ services:
   service-location:
     build: ../one-piece-location
     container_name: onepiece-location-server
-    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6383 -wait tcp://dblocation:5436 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6379 -wait tcp://dblocation:5432 npm run start:prod"
     depends_on:
       - redislocation
       - dblocation
@@ -290,13 +290,13 @@ services:
       APPHOST: localhost
       APPPORT: 7074
       DBHOST: dblocation
-      DBPORT: 5436
+      DBPORT: 5432
       DBUSERNAME: postgres
       DBPASSWORD: 123
       DBDATABASE: onepiece
       DBSCHEMA: public
       DBRATETABLE: location
-      REDIS_URL: tcp://redislocation:6383
+      REDIS_URL: tcp://redislocation:6379
       JWTKEY: ${JWTKEY}
       JWTSECRET: ${JWTSECRET}
       EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}

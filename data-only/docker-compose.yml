@@ -57,6 +57,16 @@ services:
     ports:
       - "6383:6379"
 
+  redischat:
+    image: redis:alpine
+    container_name: onepiece-chat-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6384:6379"
+
   # trip server db
   dbtrip:
     image: postgres:latest
@@ -113,6 +123,19 @@ services:
     volumes:
       - article_data:/var/lib/postgresql/data
 
+  dbchat:
+    image: postgres:latest
+    container_name: onepiece-chat-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5437:5432
+    volumes:
+      - chat_data:/var/lib/postgresql/data
+
   # pgAdmin
   pgadmin:
     image: dpage/pgadmin4
@@ -134,5 +157,6 @@ volumes:
   user_data:
   trip_data:
   location_data:
+  chat_data:
   pgadmin:
     driver: local

@@ -57,6 +57,17 @@ services:
     ports:
       - "6383:6379"
 
+  # chat server redis
+  redischat:
+    image: redis:alpine
+    container_name: onepiece-chat-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    labels:
+      kompose.service.type: nodeport
+    ports:
+      - "6384:6379"
+
   # Relation DB Area
   # trip server db
   dbtrip:
@@ -113,6 +124,20 @@ services:
       - 5436:5432
     volumes:
       - article_data:/var/lib/postgresql/data
+
+  # chat server db
+  dbchat:
+    image: postgres:latest
+    container_name: onepiece-chat-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 5437:5432
+    volumes:
+      - chat_data:/var/lib/postgresql/data
 
   # pgAdmin
   pgadmin:
@@ -195,49 +220,15 @@ services:
       TRIPSERVER: ${TRIPSERVER}
       TRIPSERVERHOST: ${TRIPSERVERHOST}
       TRIPSERVERPORT: ${TRIPSERVERPORT}
-      ARTICLEERVER: ${ARTICLEERVER}
-      ARTICLEERVERHOST: ${ARTICLEERVERHOST}
-      ARTICLEERVERPORT: ${ARTICLEERVERPORT}
-      LOCATIONERVER: ${LOCATIONERVER}
-      LOCATIONERVERHOST: ${LOCATIONERVERHOST}
-      LOCATIONERVERPORT: ${LOCATIONERVERPORT}
+      ARTICLEERVER: ${ARTICLESERVER}
+      ARTICLEERVERHOST: ${ARTICLESERVERHOST}
+      ARTICLEERVERPORT: ${ARTICLESERVERPORT}
+      LOCATIONERVER: ${LOCATIONSERVER}
+      LOCATIONERVERHOST: ${LOCATIONSERVERHOST}
+      LOCATIONERVERPORT: ${LOCATIONSERVERPORT}
       REDISRATELIMITURL: tcp://ratelimit:6379
     ports:
       - 8080:8080
-
-  # trip server
-  service-trip:
-    build: ../one-piece-trip
-    container_name: onepiece-trip-server
-    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://dbtrip:5432 npm run start:prod"
-    depends_on:
-      - redistrip
-      - dbtrip
-    environment:
-      APPHOST: localhost
-      APPPORT: 7074
-      DBHOST: dbtrip
-      DBPORT: 5432
-      DBUSERNAME: postgres
-      DBPASSWORD: 123
-      DBDATABASE: onepiece
-      DBSCHEMA: public
-      DBRATETABLE: trip
-      REDIS_URL: tcp://redistrip:6379
-      JWTKEY: ${JWTKEY}
-      JWTSECRET: ${JWTSECRET}
-      CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
-      CLOUDINARY_APIKEY: ${CLOUDINARY_APIKEY}
-      CLOUDINARY_APISECRET: ${CLOUDINARY_APISECRET}
-      CLOUDINARY_APIURL: ${CLOUDINARY_APIURL}
-      EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}
-      EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
-      EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
-      LOCATIONERVER: ${LOCATIONERVER}
-      LOCATIONERVERHOST: ${LOCATIONERVERHOST}
-      LOCATIONERVERPORT: ${LOCATIONERVERPORT}
-    ports:
-      - 7070:7070
 
   # user server
   service-user:
@@ -278,6 +269,40 @@ services:
     ports:
       - 7071:7071
 
+  # trip server
+  service-trip:
+    build: ../one-piece-trip
+    container_name: onepiece-trip-server
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://dbtrip:5432 npm run start:prod"
+    depends_on:
+      - redistrip
+      - dbtrip
+    environment:
+      APPHOST: localhost
+      APPPORT: 7072
+      DBHOST: dbtrip
+      DBPORT: 5432
+      DBUSERNAME: postgres
+      DBPASSWORD: 123
+      DBDATABASE: onepiece
+      DBSCHEMA: public
+      DBRATETABLE: trip
+      REDIS_URL: tcp://redistrip:6379
+      JWTKEY: ${JWTKEY}
+      JWTSECRET: ${JWTSECRET}
+      CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
+      CLOUDINARY_APIKEY: ${CLOUDINARY_APIKEY}
+      CLOUDINARY_APISECRET: ${CLOUDINARY_APISECRET}
+      CLOUDINARY_APIURL: ${CLOUDINARY_APIURL}
+      EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}
+      EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
+      EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
+      LOCATIONSERVER: ${LOCATIONSERVER}
+      LOCATIONSERVERHOST: ${LOCATIONSERVERHOST}
+      LOCATIONSERVERPORT: ${LOCATIONSERVERPORT}
+    ports:
+      - 7072:7072
+
   # location service
   service-location:
     build: ../one-piece-location
@@ -303,7 +328,34 @@ services:
       EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
       EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
     ports:
-      - 7072:7072
+      - 7074:7074
+
+  # chat service
+  service-chat:
+    build: ../one-piece-chat
+    container_name: onepiece-chat-server
+    command: sh -c "dockerize -wait tcp://rabbitmq:5672 -wait tcp://redischat:6379 -wait tcp://dbchat:5432 npm run start:prod"
+    depends_on:
+      - redischat
+      - dbchat
+    environment:
+      APPHOST: localhost
+      APPPORT: 7075
+      DBHOST: dbchat
+      DBPORT: 5432
+      DBUSERNAME: postgres
+      DBPASSWORD: 123
+      DBDATABASE: onepiece
+      DBSCHEMA: public
+      DBRATETABLE: chat
+      REDIS_URL: tcp://redischat:6379
+      JWTKEY: ${JWTKEY}
+      JWTSECRET: ${JWTSECRET}
+      EVENTSTOREPROTOCOL: ${EVENTSTOREPROTOCOL}
+      EVENTSTOREHOSTNAME: ${EVENTSTOREHOSTNAME}
+      EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
+    ports:
+      - 7075:7075
 
 volumes:
   article_data:

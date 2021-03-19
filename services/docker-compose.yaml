@@ -229,6 +229,7 @@ services:
       REDISRATELIMITURL: tcp://ratelimit:6379
     ports:
       - 8080:8080
+      - 84:84
 
   # user server
   service-user:

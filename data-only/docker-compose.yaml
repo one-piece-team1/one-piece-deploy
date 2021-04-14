@@ -101,7 +101,7 @@ services:
 
   # trip server db
   dbtrip:
-    image: postgres:latest
+    image: kartoza/postgis:13.0
     container_name: onepiece-trip-db
     restart: always
     environment:

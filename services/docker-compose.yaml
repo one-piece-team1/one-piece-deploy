@@ -139,6 +139,20 @@ services:
     volumes:
       - chat_data:/var/lib/postgresql/data
 
+  # event store db
+  dbeventstore:
+    image: postgres:latest
+    container_name: onepiece-event-store-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 1113:5432
+    volumes:
+      - db_event_store:/var/lib/postgresql/data
+
   # pgAdmin
   pgadmin:
     image: dpage/pgadmin4
@@ -152,6 +166,7 @@ services:
       POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
     volumes:
       - pgadmin:/root/.pgadmin
+      - pgadmin:/var/lib/pgadmin
     ports:
       - "16543:80"
 
@@ -195,7 +210,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CREATE_TOPICS: onepiece-topic-chat
+      KAFKA_CREATE_TOPICS: onepiece-topic-chat,onepiece-topic-chat-event,onepiece-gateway-event,onepiece-user-event
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -363,5 +378,7 @@ volumes:
   user_data:
   trip_data:
   location_data:
+  chat_data:
+  db_event_store:
   pgadmin:
     driver: local

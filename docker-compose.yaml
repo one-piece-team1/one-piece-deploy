@@ -199,6 +199,11 @@ services:
       RABBITMQ_DEFAULT_USER: "guest"
       RABBITMQ_DEFAULT_PASS: "guest"
       RABBITMQ_DEFAULT_VHOST: "/"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
     ports:
       - "15672:15672"
       - "5672:5672"
@@ -279,6 +284,7 @@ services:
     ports:
       - 8080:8080
       - 84:84
+    restart: on-failure
     networks:
       services-network:
         aliases:
@@ -289,7 +295,7 @@ services:
     build: ../one-piece-user
     container_name: onepiece-user-server
     # command: sh -c "./wait-for-it.sh -t 0 rabbitmq:5672 --strict -- npm run start:prod"
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6379 -wait tcp://redisuser:6379 -wait tcp://dbuser:5432 -wait tcp://gateway:8080 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6379 -wait tcp://redisuser:6379 -wait tcp://dbuser:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -338,7 +344,7 @@ services:
     build: ../one-piece-trip
     container_name: onepiece-trip-server
     # command: sh -c "./wait-for-it.sh -t 0 rabbitmq:5672 --strict -- npm run start:prod"
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://redisuser:6379 -wait tcp://dbtrip:5432 -wait tcp://gateway:8080 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://redisuser:6379 -wait tcp://dbtrip:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -373,6 +379,7 @@ services:
       LOCATIONSERVERPORT: ${LOCATIONSERVERPORT}
     ports:
       - 7072:7072
+    restart: on-failure
     networks:
       services-network:
         aliases:
@@ -383,7 +390,7 @@ services:
     build: ../one-piece-location
     container_name: onepiece-location-server
     command: sh -c "./wait-for-it.sh -t 0 rabbitmq:5672 --strict -- npm run start:prod"
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6379 -wait tcp://redisuser:6379 -wait tcp://dblocation:5432 -wait tcp://gateway:8080 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6379 -wait tcp://redisuser:6379 -wait tcp://dblocation:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -411,6 +418,7 @@ services:
       EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
     ports:
       - 7074:7074
+    restart: on-failure
     networks:
       services-network:
         aliases:
@@ -420,7 +428,7 @@ services:
   service-chat:
     build: ../one-piece-chat
     container_name: onepiece-chat-server
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redischat:6379 -wait tcp://redisuser:6379 -wait tcp://dbchat:5432 -wait tcp://gateway:8080 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redischat:6379 -wait tcp://redisuser:6379 -wait tcp://dbchat:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -448,6 +456,7 @@ services:
       EVENTSTORETCPPORT: ${EVENTSTORETCPPORT}
     ports:
       - 7075:7075
+    restart: on-failure
     networks:
       services-network:
         aliases:

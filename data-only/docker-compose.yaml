@@ -27,12 +27,13 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CREATE_TOPICS: onepiece-topic-chat,onepiece-topic-chat-event
+      KAFKA_CREATE_TOPICS: onepiece-topic-chat,onepiece-topic-chat-event,onepiece-gateway-event,onepiece-user-event,onepiece-trip-event,onepiece-locale-event,onepiece-chat-event
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+  
   # redis area
   # rate limit redis for gateway
   ratelimit:
@@ -88,6 +89,7 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6383:6379"
+  
   # redis chat
   redischat:
     image: redis:alpine
@@ -98,6 +100,21 @@ services:
       kompose.service.type: nodeport
     ports:
       - "6384:6379"
+  
+
+  # event store db
+  dbeventstore:
+    image: kartoza/postgis:13.0
+    container_name: onepiece-event-store-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: onepiece
+    ports:
+      - 1113:5432
+    volumes:
+      - db_event_store:/var/lib/postgresql/data
 
   # trip server db
   dbtrip:
@@ -154,6 +171,7 @@ services:
       - 5436:5432
     volumes:
       - article_data:/var/lib/postgresql/data
+  
   # db chat
   dbchat:
     image: postgres:latest
@@ -181,6 +199,7 @@ services:
       POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
     volumes:
       - pgadmin:/root/.pgadmin
+      - pgadmin:/var/lib/pgadmin
     ports:
       - "16543:80"
 
@@ -190,5 +209,6 @@ volumes:
   trip_data:
   location_data:
   chat_data:
+  db_event_store:
   pgadmin:
     driver: local

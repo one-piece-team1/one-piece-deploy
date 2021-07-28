@@ -80,7 +80,7 @@ services:
   # Relation DB Area
   # trip server db
   dbtrip:
-    image: kartoza/postgis:13.0
+    image: duvel/postgis:12-2.5
     container_name: onepiece-trip-db
     restart: always
     environment:
@@ -98,7 +98,7 @@ services:
 
   # user server db
   dbuser:
-    image: postgres:latest
+    image: gangstead/postgis:latest-arm
     container_name: onepiece-user-db
     restart: always
     environment:
@@ -116,7 +116,7 @@ services:
 
   # location server db
   dblocation:
-    image: kartoza/postgis:13.0
+    image: duvel/postgis:12-2.5
     container_name: onepiece-location-db
     restart: always
     environment:
@@ -134,7 +134,7 @@ services:
 
   # chat server db
   dbchat:
-    image: postgres:latest
+    image: gangstead/postgis:latest-arm
     container_name: onepiece-chat-db
     restart: always
     environment:
@@ -152,7 +152,7 @@ services:
 
   # event store db
   dbeventstore:
-    image: postgres:latest
+    image: gangstead/postgis:latest-arm
     container_name: onepiece-event-store-db
     restart: always
     environment:
@@ -216,7 +216,7 @@ services:
   # kafka area for serveral services communication will migrate all to confluent if we have budget
   # zookeeper
   zookeeper:
-    image: confluentinc/cp-zookeeper
+    image: wurstmeister/zookeeper
     container_name: onepiece-zookeeper
     ports:
       - "2181:2181"
@@ -228,15 +228,25 @@ services:
       services-network:
         aliases:
           - zookeeper
-  # kafka
+    # volumes:
+    #   - "zookeeper_data:/bitnami"
   kafka:
-    image: confluentinc/cp-kafka
+    # image: niks123123/kafka:2.7.0
+    image: wurstmeister/kafka
     container_name: onepiece-kafka
-    ports:
-      - 9094:9094
     depends_on:
       - zookeeper
+    # volumes:
+    #   - "kafka_data:/bitnami"
+    # environment:
+    #     - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+    #     - ALLOW_PLAINTEXT_LISTENER=yes
+    #     - KAFKA_LISTENERS=PLAINTEXT://:9092
+    #     - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,OUTSIDE://kafka:9094
+    # ports:
+    #   - 9094:9094
     environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://kafka:9094
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
@@ -252,6 +262,7 @@ services:
       services-network:
         aliases:
           - kafka
+
 
   # Service Area
   # gateway server
@@ -472,6 +483,8 @@ volumes:
   trip_data:
   location_data:
   chat_data:
+  # zookeeper_data:
+  # kafka_data:
   db_event_store:
   pgadmin:
     driver: local

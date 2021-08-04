@@ -80,7 +80,7 @@ services:
   # Relation DB Area
   # trip server db
   dbtrip:
-    image: duvel/postgis:12-2.5
+    image: kartoza/postgis:13.0
     container_name: onepiece-trip-db
     restart: always
     environment:
@@ -116,7 +116,7 @@ services:
 
   # location server db
   dblocation:
-    image: duvel/postgis:12-2.5
+    image: kartoza/postgis:13.0
     container_name: onepiece-location-db
     restart: always
     environment:
@@ -252,7 +252,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CREATE_TOPICS: onepiece-topic-chat,onepiece-topic-chat-event,onepiece-gateway-event,onepiece-user-event
+      KAFKA_CREATE_TOPICS: "onepiece-topic-chat:2:4,onepiece-topic-chat-event:2:4,onepiece-gateway-event:2:4,onepiece-user-event:2:4"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -287,9 +287,9 @@ services:
       ARTICLEERVER: ${ARTICLESERVER}
       ARTICLEERVERHOST: ${ARTICLESERVERHOST}
       ARTICLEERVERPORT: ${ARTICLESERVERPORT}
-      LOCATIONERVER: ${LOCATIONSERVER}
-      LOCATIONERVERHOST: ${LOCATIONSERVERHOST}
-      LOCATIONERVERPORT: ${LOCATIONSERVERPORT}
+      LOCATIONSERVER: ${LOCATIONSERVER}
+      LOCATIONSERVERHOST: ${LOCATIONSERVERHOST}
+      LOCATIONSERVERPORT: ${LOCATIONSERVERPORT}
       REDIS_URL: tcp://ratelimit:6379
       REDIS_BLACKLIST_URL: tcp://redisuser:6379
     ports:

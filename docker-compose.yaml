@@ -269,7 +269,7 @@ services:
   gateway:
     build: ../one-piece-gateway
     container_name: onepiece-gateway
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://ratelimit:6379 -wait tcp://redisuser:6379 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://ratelimit:6379 -wait tcp://redisuser:6379 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -278,6 +278,7 @@ services:
     environment:
       APPHOST: localhost
       APPPORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       USERSERVER: ${USERSERVER}
       USERSERVERHOST: ${USERSERVERHOST}
       USERSERVERPORT: ${USERSERVERPORT}
@@ -306,7 +307,7 @@ services:
     build: ../one-piece-user
     container_name: onepiece-user-server
     # command: sh -c "./wait-for-it.sh -t 0 rabbitmq:5672 --strict -- npm run start:prod"
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6379 -wait tcp://redisuser:6379 -wait tcp://dbuser:5432 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://rabbitmq:5672 -wait tcp://redisuser:6379 -wait tcp://redisuser:6379 -wait tcp://dbuser:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -327,6 +328,7 @@ services:
       REDIS_URL: tcp://redisuser:6379
       JWTKEY: ${JWTKEY}
       JWTSECRET: ${JWTSECRET}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       CLOUDINARY_APINAME: ${CLOUDINARY_APINAME}
       CLOUDINARY_APIKEY: ${CLOUDINARY_APIKEY}
       CLOUDINARY_APISECRET: ${CLOUDINARY_APISECRET}
@@ -355,7 +357,7 @@ services:
     build: ../one-piece-trip
     container_name: onepiece-trip-server
     # command: sh -c "./wait-for-it.sh -t 0 rabbitmq:5672 --strict -- npm run start:prod"
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://redisuser:6379 -wait tcp://dbtrip:5432 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://rabbitmq:5672 -wait tcp://redistrip:6379 -wait tcp://redisuser:6379 -wait tcp://dbtrip:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -375,6 +377,7 @@ services:
       DBSCHEMA: public
       DBRATETABLE: trip
       REDIS_URL: tcp://redistrip:6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_BLACKLIST_URL: tcp://redisuser:6379
       JWTKEY: ${JWTKEY}
       JWTSECRET: ${JWTSECRET}
@@ -401,7 +404,7 @@ services:
     build: ../one-piece-location
     container_name: onepiece-location-server
     command: sh -c "./wait-for-it.sh -t 0 rabbitmq:5672 --strict -- npm run start:prod"
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6379 -wait tcp://redisuser:6379 -wait tcp://dblocation:5432 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://rabbitmq:5672 -wait tcp://redislocation:6379 -wait tcp://redisuser:6379 -wait tcp://dblocation:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -420,6 +423,7 @@ services:
       DBDATABASE: onepiece
       DBSCHEMA: public
       DBRATETABLE: location
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_URL: tcp://redislocation:6379
       REDIS_BLACKLIST_URL: tcp://redisuser:6379
       JWTKEY: ${JWTKEY}
@@ -439,7 +443,7 @@ services:
   service-chat:
     build: ../one-piece-chat
     container_name: onepiece-chat-server
-    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9094 -wait tcp://rabbitmq:5672 -wait tcp://redischat:6379 -wait tcp://redisuser:6379 -wait tcp://dbchat:5432 npm run start:prod"
+    command: sh -c "dockerize -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://rabbitmq:5672 -wait tcp://redischat:6379 -wait tcp://redisuser:6379 -wait tcp://dbchat:5432 npm run start:prod"
     depends_on:
       - zookeeper
       - kafka
@@ -458,6 +462,7 @@ services:
       DBDATABASE: onepiece
       DBSCHEMA: public
       DBRATETABLE: chat
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_URL: tcp://redischat:6379
       REDIS_BLACKLIST_URL: tcp://redisuser:6379
       JWTKEY: ${JWTKEY}
